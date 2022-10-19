@@ -10,15 +10,15 @@ import (
 
 	"github.com/curtisnewbie/gocommon/config"
 	"github.com/curtisnewbie/gocommon/consul"
-	"github.com/curtisnewbie/gocommon/util"
 	"github.com/curtisnewbie/gocommon/web/dto"
 	"github.com/curtisnewbie/gocommon/weberr"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	DIR  FileType = "DIR"
-	FILE FileType = "FILE"
+	DIR               FileType = "DIR"
+	FILE              FileType = "FILE"
+	FILE_SERVICE_NAME string   = "file-service"
 )
 
 type FileType string
@@ -183,11 +183,11 @@ func BuildFileServiceUrl(relUrl string) string {
 	}
 
 	if consul.HasConsulClient() {
-		address, err := consul.FetchServiceAddress("file-service")
-		if err != nil && !util.IsEmpty(&address) {
-			return address + relUrl
+		address, err := consul.FetchServiceAddress(FILE_SERVICE_NAME)
+		if err == nil && address != "" {
+			return "http://" + address + relUrl
 		}
-		logrus.Infof("Unable to find service address from consul for 'file-service', trying to use the one in config json file")
+		logrus.Infof("Unable to find service address from consul for '%s', trying to use the one in config json file", FILE_SERVICE_NAME)
 	}
 
 	if config.GlobalConfig.ClientConf == nil {
