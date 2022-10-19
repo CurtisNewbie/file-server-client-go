@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/curtisnewbie/gocommon/config"
+	"github.com/curtisnewbie/gocommon/consul"
+	"github.com/curtisnewbie/gocommon/util"
 	"github.com/curtisnewbie/gocommon/web/dto"
 	"github.com/curtisnewbie/gocommon/weberr"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -67,7 +69,7 @@ type ListFilesInDirResp struct {
 // List files in dir from file-service
 func ListFilesInDir(fileKey string, limit int, page int) (*ListFilesInDirResp, error) {
 	url := BuildFileServiceUrl(fmt.Sprintf("/remote/user/file/indir/list?fileKey=%s&limit=%d&page=%d", fileKey, limit, page))
-	log.Infof("List files in dir, url: %s", url)
+	logrus.Infof("List files in dir, url: %s", url)
 	r, e := http.Get(url)
 	if e != nil {
 		return nil, e
@@ -78,7 +80,7 @@ func ListFilesInDir(fileKey string, limit int, page int) (*ListFilesInDirResp, e
 	if e != nil {
 		return nil, e
 	}
-	log.Infof("List files in dir, resp: %v", string(body))
+	logrus.Infof("List files in dir, resp: %v", string(body))
 
 	var resp ListFilesInDirResp
 	if e = json.Unmarshal(body, &resp); e != nil {
@@ -94,7 +96,7 @@ func ListFilesInDir(fileKey string, limit int, page int) (*ListFilesInDirResp, e
 // Get file info from file-service
 func GetFileInfo(fileKey string) (*GetFileInfoResp, error) {
 	url := BuildFileServiceUrl(fmt.Sprintf("/remote/user/file/info?fileKey=%s", fileKey))
-	log.Infof("Get file info, url: %s", url)
+	logrus.Infof("Get file info, url: %s", url)
 	r, e := http.Get(url)
 	if e != nil {
 		return nil, e
@@ -105,7 +107,7 @@ func GetFileInfo(fileKey string) (*GetFileInfoResp, error) {
 	if e != nil {
 		return nil, e
 	}
-	log.Infof("Get file info, resp: %v", string(body))
+	logrus.Infof("Get file info, resp: %v", string(body))
 
 	var resp GetFileInfoResp
 	if e = json.Unmarshal(body, &resp); e != nil {
@@ -121,7 +123,7 @@ func GetFileInfo(fileKey string) (*GetFileInfoResp, error) {
 // Download file from file-service
 func DownloadFile(fileKey string, absPath string) error {
 	url := BuildFileServiceUrl(fmt.Sprintf("/remote/user/file/download?fileKey=%s", fileKey))
-	log.Infof("Download file, url: %s, absPath: %s", url, absPath)
+	logrus.Infof("Download file, url: %s, absPath: %s", url, absPath)
 
 	out, err := os.Create(absPath)
 	if err != nil {
@@ -140,7 +142,7 @@ func DownloadFile(fileKey string, absPath string) error {
 		return err
 	}
 
-	log.Infof("Finished downloading file, url: %s", url)
+	logrus.Infof("Finished downloading file, url: %s", url)
 	return nil
 }
 
@@ -148,7 +150,7 @@ func DownloadFile(fileKey string, absPath string) error {
 func ValidateFileKey(fileKey string, userId string) (bool, error) {
 
 	url := BuildFileServiceUrl(fmt.Sprintf("/remote/user/file/owner/validation?fileKey=%s&userId=%s", fileKey, userId))
-	log.Infof("Validate file key, url: %s", url)
+	logrus.Infof("Validate file key, url: %s", url)
 
 	r, e := http.Get(url)
 	if e != nil {
@@ -160,7 +162,7 @@ func ValidateFileKey(fileKey string, userId string) (bool, error) {
 	if e != nil {
 		return false, e
 	}
-	log.Infof("Validate file key, key: %v resp: %v", fileKey, string(body))
+	logrus.Infof("Validate file key, key: %v resp: %v", fileKey, string(body))
 
 	var resp ValidateFileKeyResp
 	if e := json.Unmarshal(body, &resp); e != nil {
@@ -178,6 +180,18 @@ func ValidateFileKey(fileKey string, userId string) (bool, error) {
 func BuildFileServiceUrl(relUrl string) string {
 	if !strings.HasPrefix(relUrl, "/") {
 		relUrl = "/" + relUrl
+	}
+
+	if consul.HasConsulClient() {
+		address, err := consul.FetchServiceAddress("file-service")
+		if err != nil && !util.IsEmpty(&address) {
+			return address + relUrl
+		}
+		logrus.Infof("Unable to find service address from consul for 'file-service', trying to use the one in config json file")
+	}
+
+	if config.GlobalConfig.ClientConf == nil {
+		panic("Missing client.fileServiceUrl configuration, unable to resolve base url for file-service")
 	}
 	return config.GlobalConfig.ClientConf.FileServiceUrl + relUrl
 }
