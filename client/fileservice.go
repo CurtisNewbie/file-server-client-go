@@ -183,7 +183,7 @@ func BuildFileServiceUrl(relUrl string) string {
 	}
 
 	if consul.HasConsulClient() {
-		address, err := consul.FetchServiceAddress(FILE_SERVICE_NAME)
+		address, err := consul.ResolveServiceAddress(FILE_SERVICE_NAME)
 		if err == nil && address != "" {
 			return "http://" + address + relUrl
 		}
