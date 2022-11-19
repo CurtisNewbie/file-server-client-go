@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/curtisnewbie/gocommon/config"
-	"github.com/curtisnewbie/gocommon/consul"
+	"github.com/curtisnewbie/gocommon"
 	log "github.com/sirupsen/logrus"
 )
 
 func PreTest() {
-	conf, _ := config.ParseJsonConfig(fmt.Sprintf("../app-conf-%v.json", "dev"))
-	config.SetGlobalConfig(conf)
-	consul.InitConsulClient(conf.ConsulConf)
+	gocommon.LoadConfigFromFile(fmt.Sprintf("../app-conf-%v.json", "dev"))
 }
 
 func TestDownloadFile(t *testing.T) {

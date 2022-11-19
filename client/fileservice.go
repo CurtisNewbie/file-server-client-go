@@ -8,10 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/curtisnewbie/gocommon/config"
-	"github.com/curtisnewbie/gocommon/consul"
-	"github.com/curtisnewbie/gocommon/web/dto"
-	"github.com/curtisnewbie/gocommon/weberr"
+	"github.com/curtisnewbie/gocommon"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,12 +16,14 @@ const (
 	DIR               FileType = "DIR"
 	FILE              FileType = "FILE"
 	FILE_SERVICE_NAME string   = "file-service"
+
+	PROP_FILE_SERVICE_BASE_URL = "client.fileServiceUrl"
 )
 
 type FileType string
 
 type ValidateFileKeyResp struct {
-	dto.Resp
+	gocommon.Resp
 	Data bool `json:"data"`
 }
 
@@ -56,12 +55,12 @@ type FileInfoResp struct {
 }
 
 type GetFileInfoResp struct {
-	dto.Resp
+	gocommon.Resp
 	Data *FileInfoResp `json:"data"`
 }
 
 type ListFilesInDirResp struct {
-	dto.Resp
+	gocommon.Resp
 	// list of file key
 	Data []string `json:"data"`
 }
@@ -88,7 +87,7 @@ func ListFilesInDir(fileKey string, limit int, page int) (*ListFilesInDirResp, e
 	}
 
 	if resp.Resp.Error {
-		return nil, weberr.NewWebErr(resp.Resp.Msg)
+		return nil, gocommon.NewWebErr(resp.Resp.Msg)
 	}
 	return &resp, nil
 }
@@ -115,7 +114,7 @@ func GetFileInfo(fileKey string) (*GetFileInfoResp, error) {
 	}
 
 	if resp.Resp.Error {
-		return nil, weberr.NewWebErr(resp.Resp.Msg)
+		return nil, gocommon.NewWebErr(resp.Resp.Msg)
 	}
 	return &resp, nil
 }
@@ -170,28 +169,37 @@ func ValidateFileKey(fileKey string, userId string) (bool, error) {
 	}
 
 	if resp.Resp.Error {
-		return false, weberr.NewWebErr(resp.Resp.Msg)
+		return false, gocommon.NewWebErr(resp.Resp.Msg)
 	}
 
 	return resp.Data, nil
 }
 
-// Concatenate given relative url to base url, the relUrl may or may not start with "/"
+/* 
+	Concatenate given relative url to base url, the relUrl may or may not start with "/"
+
+	This func looks for prop:
+
+		PROP_FILE_SERVICE_BASE_URL
+
+*/
 func BuildFileServiceUrl(relUrl string) string {
 	if !strings.HasPrefix(relUrl, "/") {
 		relUrl = "/" + relUrl
 	}
 
-	if consul.HasConsulClient() {
-		address, err := consul.ResolveServiceAddress(FILE_SERVICE_NAME)
+	// if consul is enabled, try to look it up in the server list first
+	if gocommon.IsConsulClientInitialized() {
+		address, err := gocommon.ResolveServiceAddress(FILE_SERVICE_NAME)
 		if err == nil && address != "" {
 			return "http://" + address + relUrl
 		}
 		logrus.Infof("Unable to find service address from consul for '%s', trying to use the one in config json file", FILE_SERVICE_NAME)
 	}
 
-	if config.GlobalConfig.ClientConf == nil {
+	baseUrl := gocommon.GetPropStr(PROP_FILE_SERVICE_BASE_URL)
+	if baseUrl == "" {
 		panic("Missing client.fileServiceUrl configuration, unable to resolve base url for file-service")
 	}
-	return config.GlobalConfig.ClientConf.FileServiceUrl + relUrl
+	return baseUrl + relUrl
 }
