@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/curtisnewbie/gocommon"
+	"github.com/curtisnewbie/gocommon/common"
 	log "github.com/sirupsen/logrus"
 )
 
 func PreTest() {
-	gocommon.LoadConfigFromFile(fmt.Sprintf("../app-conf-%v.json", "dev"))
+	common.LoadConfigFromFile(fmt.Sprintf("../app-conf-%v.json", "dev"))
 }
 
 func TestDownloadFile(t *testing.T) {

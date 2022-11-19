@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/curtisnewbie/gocommon"
+	"github.com/curtisnewbie/gocommon/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,7 +23,7 @@ const (
 type FileType string
 
 type ValidateFileKeyResp struct {
-	gocommon.Resp
+	common.Resp
 	Data bool `json:"data"`
 }
 
@@ -55,12 +55,12 @@ type FileInfoResp struct {
 }
 
 type GetFileInfoResp struct {
-	gocommon.Resp
+	common.Resp
 	Data *FileInfoResp `json:"data"`
 }
 
 type ListFilesInDirResp struct {
-	gocommon.Resp
+	common.Resp
 	// list of file key
 	Data []string `json:"data"`
 }
@@ -87,7 +87,7 @@ func ListFilesInDir(fileKey string, limit int, page int) (*ListFilesInDirResp, e
 	}
 
 	if resp.Resp.Error {
-		return nil, gocommon.NewWebErr(resp.Resp.Msg)
+		return nil, common.NewWebErr(resp.Resp.Msg)
 	}
 	return &resp, nil
 }
@@ -114,7 +114,7 @@ func GetFileInfo(fileKey string) (*GetFileInfoResp, error) {
 	}
 
 	if resp.Resp.Error {
-		return nil, gocommon.NewWebErr(resp.Resp.Msg)
+		return nil, common.NewWebErr(resp.Resp.Msg)
 	}
 	return &resp, nil
 }
@@ -169,7 +169,7 @@ func ValidateFileKey(fileKey string, userId string) (bool, error) {
 	}
 
 	if resp.Resp.Error {
-		return false, gocommon.NewWebErr(resp.Resp.Msg)
+		return false, common.NewWebErr(resp.Resp.Msg)
 	}
 
 	return resp.Data, nil
@@ -189,15 +189,15 @@ func BuildFileServiceUrl(relUrl string) string {
 	}
 
 	// if consul is enabled, try to look it up in the server list first
-	if gocommon.IsConsulClientInitialized() {
-		address, err := gocommon.ResolveServiceAddress(FILE_SERVICE_NAME)
+	if common.IsConsulClientInitialized() {
+		address, err := common.ResolveServiceAddress(FILE_SERVICE_NAME)
 		if err == nil && address != "" {
 			return "http://" + address + relUrl
 		}
 		logrus.Infof("Unable to find service address from consul for '%s', trying to use the one in config json file", FILE_SERVICE_NAME)
 	}
 
-	baseUrl := gocommon.GetPropStr(PROP_FILE_SERVICE_BASE_URL)
+	baseUrl := common.GetPropStr(PROP_FILE_SERVICE_BASE_URL)
 	if baseUrl == "" {
 		panic("Missing client.fileServiceUrl configuration, unable to resolve base url for file-service")
 	}
