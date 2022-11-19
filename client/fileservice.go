@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/curtisnewbie/gocommon/common"
+	"github.com/curtisnewbie/gocommon/consul"
 	"github.com/sirupsen/logrus"
 )
 
@@ -189,8 +190,8 @@ func BuildFileServiceUrl(relUrl string) string {
 	}
 
 	// if consul is enabled, try to look it up in the server list first
-	if common.IsConsulClientInitialized() {
-		address, err := common.ResolveServiceAddress(FILE_SERVICE_NAME)
+	if consul.IsConsulClientInitialized() {
+		address, err := consul.ResolveServiceAddress(FILE_SERVICE_NAME)
 		if err == nil && address != "" {
 			return "http://" + address + relUrl
 		}
