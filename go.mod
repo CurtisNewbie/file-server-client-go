@@ -3,7 +3,7 @@ module github.com/curtisnewbie/file-server-client-go
 go 1.18
 
 require (
-	github.com/curtisnewbie/gocommon v0.0.0-20221120154325-fd664a393dad
+	github.com/curtisnewbie/gocommon v0.0.0-20221203125959-c626a5e54a7b
 	github.com/sirupsen/logrus v1.9.0
 )
 
